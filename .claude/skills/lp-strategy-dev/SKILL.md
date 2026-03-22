@@ -314,7 +314,30 @@ makes the math layer highly testable and reusable across different products.
 
 ---
 
-## 8. Development Pitfalls & Guardrails
+## 8. Pool Selection & Performance Analytics
+
+Full framework in `references/analytics_framework.md`. Summary of key metrics:
+
+**Evaluating a pool before entry:**
+- **Pool fundamentals:** TVL (> $1M preferred), volume/TVL ratio (> 0.1 daily = healthy),
+  pool age (> 30 days for stability)
+- **Fee economics:** Historical fee APR at 7d/30d/90d windows, fee income stability (CV),
+  fee tier appropriateness for pair volatility
+- **Liquidity depth:** Your share of active liquidity, competitor LP density at target range
+- **Risk assessment:** Token audit status, bridge risk, MEV exposure, gas economics
+- **Funding viability** (delta-neutral): Positive + sustainable funding rate environment
+- Use the scoring template in the reference file (12-16 points = strong candidate)
+
+**Tracking position performance:**
+- **Core metrics:** ROI vs HODL (most important), fee/IL ratio, IL recovery rate, net APR, win rate
+- **Time-series:** Fee APR trend, cumulative P&L decomposition, delta drift, funding history
+- **Risk:** Max drawdown, Sharpe ratio, time in range %, realized vs implied volatility
+- **Exit signals:** LP vs HODL negative > 14 days, LP vs lending negative > 30 days,
+  fee APR < 50% of pool average
+
+---
+
+## 9. Development Pitfalls & Guardrails
 
 When co-developing LP code, watch for these common bugs:
 
@@ -348,7 +371,7 @@ When co-developing LP code, watch for these common bugs:
 
 ---
 
-## 9. Chain-Specific Context
+## 10. Chain-Specific Context
 
 LP tools should be chain/DEX-configurable, not hardcoded. Key differences:
 
@@ -372,7 +395,7 @@ endpoint, block time) rather than hardcoding. A simple config dict or env vars w
 
 ---
 
-## 10. Testing & Validation Patterns
+## 11. Testing & Validation Patterns
 
 How to verify LP math implementations are correct:
 
@@ -401,7 +424,7 @@ positions (minted recently, single deposit, no withdrawals) to catch systematic 
 
 ---
 
-## 11. Product Pipeline
+## 12. Product Pipeline
 
 Full details in `references/product_pipeline.md`. Recommended build order:
 
@@ -429,7 +452,7 @@ Full details in `references/product_pipeline.md`. Recommended build order:
 
 ---
 
-## 12. Related Tooling
+## 13. Related Tooling
 
 ### Existing tools in the ecosystem
 
@@ -442,7 +465,7 @@ Full details in `references/product_pipeline.md`. Recommended build order:
 
 ---
 
-## 13. Reference Files
+## 14. Reference Files
 
 Read these when you need deeper detail. Each file has a table of contents.
 
@@ -453,6 +476,7 @@ Read these when you need deeper detail. Each file has a table of contents.
 | `references/strategy_framework.md` | Range selection, rebalancing logic, funding rate analysis, monitoring dashboards, entry/exit criteria | ~500 |
 | `references/coinbase_nano_futures.md` | Hedging instrument specs, contract details, margin requirements, API access, funding rates | ~560 |
 | `references/product_pipeline.md` | Product ideation, revenue models, build prioritization, market sizing | ~190 |
+| `references/analytics_framework.md` | Pool selection scorecard, position performance metrics, dashboard layout, exit signals | ~340 |
 
 ### When to consult references vs use this skill body
 
