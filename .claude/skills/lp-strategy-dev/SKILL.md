@@ -21,6 +21,20 @@ This skill synthesizes knowledge from a comprehensive research base covering Uni
 math, delta-neutral strategy theory, operational frameworks, hedging instruments, and
 a product pipeline — all cross-referenced from 7+ academic and industry sources.
 
+### Scope & Boundaries
+
+- **Your role is technical co-development.** Help build tools, write code, design
+  architectures, debug math, review implementations, plan products.
+- **You are not a financial advisor.** When asked "should I invest in X pool?" or
+  "is this a good strategy to use with my money?", redirect: explain the technical
+  tradeoffs and risk factors, but make clear that investment decisions require the
+  user's own judgment and risk tolerance. Never recommend specific financial actions.
+- **When presenting P&L projections or simulation results**, always note the assumptions
+  and limitations (constant vol/fees/funding, no gas, no liquidation risk, etc.).
+- **When the user asks about a specific pool or position**, help them analyze it
+  technically (compute Greeks, estimate fees, model scenarios) but frame outputs as
+  analytical tools, not investment recommendations.
+
 ---
 
 ## 1. Core LP Concepts
@@ -300,7 +314,94 @@ makes the math layer highly testable and reusable across different products.
 
 ---
 
-## 8. Product Pipeline
+## 8. Development Pitfalls & Guardrails
+
+When co-developing LP code, watch for these common bugs:
+
+- **Token ordering:** token0 is always the lower contract address. Always verify which
+  token is token0 vs token1 before computing prices. Getting this wrong silently inverts
+  all calculations — prices become reciprocals, delta signs flip, everything breaks.
+
+- **Integer vs float math:** Reference implementations in the knowledge base use floats
+  for clarity. Production V3 code MUST use integer arithmetic (uint256). Floating-point
+  introduces rounding errors that compound across calculations. In Python, use `int` or
+  `Decimal` for on-chain math, never bare `float`.
+
+- **Decimal adjustment:** token0 and token1 have different decimals (e.g., USDC=6,
+  ETH=18). Every price conversion must account for `10**decimals0 / 10**decimals1`.
+  Missing this produces prices off by factors of 10^12. Always require decimals as
+  explicit parameters — never assume 18.
+
+- **Fee growth overflow:** `feeGrowthGlobal` uses unchecked 256-bit math. Subtractions
+  can underflow — this is intentional (modular arithmetic). Always use
+  `(a - b) % 2**256`, never raw subtraction. The reference implementation in
+  `references/uniswap_v3_math.md` §7 shows the correct `sub_in_256()` pattern.
+
+- **Tick spacing alignment:** Position tick boundaries must align to the pool's tick
+  spacing. A 0.30% fee pool (tickSpacing=60) cannot use tick 100 — it must be rounded
+  to a multiple of 60. Use `tick - (tick % tickSpacing)` for lower bound,
+  `tick + (tickSpacing - tick % tickSpacing)` for upper bound.
+
+- **sqrtPriceX96 precision:** When converting between sqrtPriceX96 and human-readable
+  prices, intermediate values (squaring a 160-bit number) can exceed uint256. Use
+  multi-precision arithmetic or carefully ordered operations to avoid overflow.
+
+---
+
+## 9. Chain-Specific Context
+
+LP tools should be chain/DEX-configurable, not hardcoded. Key differences:
+
+| Chain | DEX | Fee Tiers | Data Source |
+|-------|-----|-----------|-------------|
+| Ethereum | Uniswap V3 | 0.01%, 0.05%, 0.30%, 1.00% | Official subgraph, reliable |
+| PulseChain | PulseX V2 (V3 fork) | May differ from canonical V3 | PulseX subgraph or direct RPC |
+| PulseChain | 9mm V3 | Check per-pool deployment | Limited indexing — prefer RPC |
+| Arbitrum | Uniswap V3 | Standard V3 tiers | Uniswap subgraph (Arbitrum) |
+| Base | Uniswap V3 | Standard V3 tiers | Uniswap subgraph (Base) |
+
+**PulseChain-specific considerations:**
+- RPC endpoint: `https://rpc.pulsechain.com` (or user's preferred node)
+- Block time differs (~10s vs Ethereum's ~12s) — affects fee APR annualization
+- Pool factory addresses differ per DEX — must be discovered, not assumed
+- Subgraph availability is inconsistent — direct RPC reads are more reliable
+- Token addresses differ from Ethereum even for "same" tokens (bridged vs native)
+
+**Design pattern:** Always parameterize chain config (RPC URL, factory address, subgraph
+endpoint, block time) rather than hardcoding. A simple config dict or env vars work.
+
+---
+
+## 10. Testing & Validation Patterns
+
+How to verify LP math implementations are correct:
+
+**Known test vectors:** Use numerical examples in `references/uniswap_v3_math.md` §9
+as baseline assertions in unit tests.
+
+**Cross-check with canonical libraries:** Compare outputs against `@uniswap/v3-sdk` (JS)
+or Uniswap's on-chain `SqrtPriceMath` / `TickMath` libraries for authoritative results.
+
+**Mainnet validation:** The revert-backtester pattern — validate against real mainnet
+positions (minted recently, single deposit, no withdrawals) to catch systematic errors.
+
+**Invariant tests (must always hold):**
+- `liquidity_from_amounts(token_amounts(L, P, Pa, Pb))` should return L
+- Position value at P = entry_price equals initial deposit (zero IL at inception)
+- Delta equals token0 amount when price is within range
+- `feeGrowthInside + feeGrowthOutside = feeGrowthGlobal` (conservation)
+
+**Edge cases to always test:**
+- Price exactly at P_a and exactly at P_b (boundary behavior, discontinuities)
+- Price 1 tick inside vs 1 tick outside range
+- Minimum tick (-887272) and maximum tick (+887272)
+- Zero liquidity positions
+- Pools where token0 is the stablecoin (inverted price convention)
+- Tick values not aligned to tick spacing (should reject or round)
+
+---
+
+## 11. Product Pipeline
 
 Full details in `references/product_pipeline.md`. Recommended build order:
 
@@ -328,7 +429,7 @@ Full details in `references/product_pipeline.md`. Recommended build order:
 
 ---
 
-## 9. Related Tooling
+## 12. Related Tooling
 
 ### Existing tools in the ecosystem
 
@@ -341,7 +442,7 @@ Full details in `references/product_pipeline.md`. Recommended build order:
 
 ---
 
-## 10. Reference Files
+## 13. Reference Files
 
 Read these when you need deeper detail. Each file has a table of contents.
 
