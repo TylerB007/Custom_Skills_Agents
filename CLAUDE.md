@@ -11,6 +11,7 @@ This repository contains custom Claude Code skills and agents.
 ## Available Skills
 
 - **skill-creator** — Create, test, and iterate on new skills. Invoke with `/skill-creator`.
+- **lp-strategy-dev** — Co-develop LP tools, analytics, delta-neutral strategies, and DeFi software. Auto-triggers on LP/Uniswap V3/concentrated liquidity topics. Has 5 reference files covering V3 math, strategy framework, hedging instruments, and product pipeline.
 
 ## Adding a New Skill
 

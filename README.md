@@ -11,6 +11,7 @@ Skills extend Claude Code with specialized capabilities. They live in `.claude/s
 | Skill | Description |
 |-------|-------------|
 | [skill-creator](.claude/skills/skill-creator/) | Create, evaluate, and iterate on new skills. From [anthropics/skills](https://github.com/anthropics/skills). |
+| [lp-strategy-dev](.claude/skills/lp-strategy-dev/) | Co-develop LP tools, delta-neutral strategies, Uniswap V3 analytics, and DeFi software. Includes 5 deep reference files. |
 
 ### Agents
 
